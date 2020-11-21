@@ -1,0 +1,52 @@
+openapi: 3.0.0
+info:
+  title: testapi
+  version: '1.0'
+servers:
+  - url: 'http://localhost:3000'
+paths:
+  '/user/{user_id}':
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses: {}
+      operationId: 'get-users-:user_id'
+    parameters:
+      - schema:
+          type: string
+        name: user_id
+        in: path
+        required: true
+  /users:
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses: {}
+      operationId: get-users
+  /samples:
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses: {}
+      operationId: get-samples
+  '/sample/{sample_id}':
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses: {}
+      operationId: 'get-sample-:sample_id'
+    parameters: []
+components:
+  schemas:
+    User:
+      title: User
+      type: object
+      properties:
+        id:
+          type: string
+    Sample:
+      title: Sample
+      type: object
+      properties:
+        id:
+          type: string
