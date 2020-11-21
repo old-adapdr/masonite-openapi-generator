@@ -284,7 +284,7 @@ class GenerateCommand(Command):
             paths[route][endpoint_type]["parameters"] = [
                 {
                     "schema": {"type": "string"},
-                    "in": "query",  # TODO multiple-args=types
+                    "in": "query",  # TODO multiple-args-types
                     "name": str(argument_name),
                 }
             ]
