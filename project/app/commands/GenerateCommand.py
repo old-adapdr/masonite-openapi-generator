@@ -17,7 +17,10 @@ class GenerateCommand(Command):
     Generates valid OpenAPI 3.0 from application
 
     openapi:generate
-        {name : optional alternative filename, default=OpenAPI.yaml}
+        {name? : Name of the file, default='OpenAPI'}
+        {path? : Path for the file, default='static/schemas'}
+        {type? : Type of format, default='json', options='json,yaml'}
+        {output? : Output format, default='file', options='file,term'}
     """
 
     @staticmethod
@@ -290,33 +293,94 @@ class GenerateCommand(Command):
             ]
 
     @staticmethod
+    def _parse_spec_options(specc_options: dict):
+        """Attempts to parse provided argument options"""
+        parsed = {}
+        parsed['specification'] = specc_options['specification']
+
+        if 'name' in specc_options \
+           and specc_options['name'] is not None:
+            parsed['filename'] = specc_options['name']
+        else:
+            parsed['filename'] = "OpenAPI"
+
+        if 'path' in specc_options \
+           and specc_options['path'] is not None:
+            parsed['filepath'] = specc_options['path']
+        else:
+            parsed['filepath'] = "project_directory"
+
+        if 'type' in specc_options \
+           and specc_options['type'] is not None:
+            parsed['_format'] = specc_options['type']
+        else:
+            parsed['_format'] = "json"
+
+        if 'output' in specc_options \
+           and specc_options['output'] is not None:
+            parsed['output'] = specc_options['output']
+        else:
+            parsed['output'] = "file"
+
+        return parsed
+
+    @staticmethod
     def _write_specification(
         specification: dict,
-        filename: str = "openapi",
-        format: str = "json",
-        output: bool = "file",
+        filename: str,
+        filepath: str,
+        _format: str,
+        output: str,
     ):
         """
         Writes specification to output or file.
 
         Argument(s):
-        - specification <dict>:   specification to write (Required)
-        - filename <str>: filename to set for the specification,
-            default='openapi.extension`
+        - specification <dict>: specification to write
+        - filepath <str>: filepath to store file,
+                          deafult='storage/static/schemas'
+        - filename <str>: name of the file, default='OpenAPI`
         - format <str>:   format option to use,
-            available options: `json` | `yaml`, default='json'
+                          options: `json` | `yaml`, default='json'
         - output <str>:   output option to use,
-            available options: `file` | 'print', 'default='file'
+                          options: `file` | 'term', 'default='file'
         """
+        vals = {
+            'filename': filename,
+            'filepath': filepath,
+            'format': _format,
+            'output': output
+        }
+        print(vals)
+        return
 
-        if format == "json" and output == "file":
-            with open(f"{filename}.json", "w") as file:
+        if output == 'term':  # Special case -> print
+            print(json.dumps(obj=specification, indent=4))
+
+        # Else create full filename with extension
+        extension = f".{_format}"
+        filename = f"{filename}{extension}"
+
+        # Create abspath for the file
+        if filepath == 'project_directory':
+            abspath = project_directory \
+                      .joinpath('storage/static/schemas/', filename) \
+                      .absolute()
+        else:  # Use provided path
+            abspath = Path(filename) \
+                      .join(filepath) \
+                      .absolute()
+
+        # Find format and write to file
+        if _format == "json" and output == "file":
+            with open(abspath, "w") as file:
                 json.dump(specification, file, indent=4)
-        elif format == "yaml" and output == "file":
-            with open(f"{filename}.yaml", "w") as file:
+        elif _format in ["yaml", 'yml'] and output == "file":
+            with open(abspath, "w") as file:
                 yaml.dump(specification, file, indent=4)
         else:
-            print(json.dumps(obj=specification, indent=4))
+            with open(abspath, "w") as file:
+                json.dump(specification, file, indent=4)
 
     def handle(self):
         global_tags = []
@@ -366,4 +430,8 @@ class GenerateCommand(Command):
         base["components"] = self._create_components(endpoint, model)
 
         # Make the spec!
-        self._write_specification(base)
+        specc_options = {'specification': base}
+        specc_options.update(self.argument())
+        specc_options.pop('command')
+        specc_options = self._parse_spec_options(specc_options)
+        self._write_specification(**specc_options)
